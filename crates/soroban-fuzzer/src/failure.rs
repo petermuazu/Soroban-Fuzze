@@ -91,6 +91,17 @@ impl<A: fmt::Debug> fmt::Display for FuzzFailure<A> {
             };
             writeln!(f, "    {i:>3}: {s:?}{mark}")?;
         }
+        writeln!(f, "  regression test:")?;
+        writeln!(f, "    Fuzzer::<H>::new().replay(vec![")?;
+        for step in &self.steps {
+            match step {
+                Step::Call(action) => writeln!(f, "        Step::Call({action:?}),")?,
+                Step::AdvanceLedger(n) => {
+                    writeln!(f, "        Step::AdvanceLedger({n}),")?
+                }
+            }
+        }
+        writeln!(f, "    ]).unwrap();")?;
         writeln!(f, "  error: {}", first_lines(&self.message, 12))?;
         write!(f, "  replay: SOROBAN_FUZZ_SEED={} cargo test", self.seed)
     }
@@ -150,6 +161,12 @@ mod tests {
         let text = f.to_string();
         assert!(
             text.contains("1: <advance 5 ledgers>  <-- failed here"),
+            "{text}"
+        );
+        assert!(
+            text.contains(
+                "Fuzzer::<H>::new().replay(vec![\n        Step::Call(\"a\"),\n        Step::AdvanceLedger(5),\n        Step::Call(\"b\"),\n    ]).unwrap();"
+            ),
             "{text}"
         );
         assert!(text.contains("SOROBAN_FUZZ_SEED=9"), "{text}");

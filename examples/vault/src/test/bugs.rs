@@ -1,5 +1,7 @@
 //! Each buggy vault must be caught, classified correctly and shrunk.
 
+use std::vec;
+
 use soroban_fuzzer::prelude::*;
 
 use super::expect_bug;
@@ -14,6 +16,17 @@ use crate::{
 #[test]
 fn missing_require_auth() {
     expect_bug::<MissingAuthVault>(FailureKind::MissingAuth, 3, |f| f);
+}
+
+#[test]
+fn missing_auth_regression() {
+    type H = VaultHarness<crate::Vault>;
+    use crate::harness::Action::Deposit;
+    use soroban_fuzzer::strategies::Amount::All;
+
+    Fuzzer::<H>::new()
+        .replay(vec![Step::Call(Deposit(ActorId(0), All))])
+        .unwrap();
 }
 
 #[test]
